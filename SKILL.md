@@ -49,6 +49,12 @@ python3 scripts/word_gov_format_cn.py <input.docx> --no-punct-normalize
 - 执行前先 `--dry-run` 列出计划，并向用户确认目标路径。
 - 未经用户明确同意，**不得**使用 `--in-place` 或 `--force`。
 
+## 业务材料与仓库隔离
+
+- 真实公文、数据及原件备份应放在仓库外的受控目录。
+- 仓库默认忽略业务文档、`.bak-*` 备份、`.env` 和常见私钥；不要用 `git add -f` 提交真实材料。
+- 现有虚构样例已跟踪；新增样例必须审核正文及隐藏属性。忽略规则不能清除已经提交的文件和历史记录。
+
 ## Implemented format rules
 
 - Paper: A4 (210mm x 297mm)
@@ -70,6 +76,8 @@ python3 scripts/word_gov_format_cn.py <input.docx> --no-punct-normalize
 
 Protected and left untouched: URLs (`www.*`, `http(s)://`), emails, dotted Latin tokens (`gov.cn`, `e.g.`, `v1.2.3`, `file.docx`), times (`10:30`), ASCII apostrophes (`don't`), and list numbering (`1.`). Paragraphs with no Chinese characters are not normalized at all. Use `--no-punct-normalize` to disable entirely.
 
+Detection uses the full paragraph text, including tokens split across formatting runs. Length-preserving replacements are mapped back to the original runs; hyperlinks and runs with complex content retain their text and XML structure. Punctuation rules remain heuristic, so review the result.
+
 ## 未处理的部分
 
 - 发文机关标志下的红色分隔线需手动添加，见 `references/red-underline.md`。
@@ -80,7 +88,7 @@ Protected and left untouched: URLs (`www.*`, `http(s)://`), emails, dotted Latin
 
 - Use Python ≥ 3.10; the script uses `Path | None` annotations.
 - 发文机关与标题靠启发式识别（首段 ≤30 字且以「局/部/委/办/中心/处/室/会/厅」结尾视为机关）。窄标题、被截断的标题行可能判错，生成后需肉眼确认。
-- `--in-place` 的备份是 `<文件名>.bak-<时间戳>`，不是版本管理；重要文件仍建议先提交到 git 或另存副本。
+- `--in-place` 的备份是 `<文件名>.bak-<时间戳>`；重要文件仍需在受控目录另存副本，不要提交到公开仓库。
 - 目录批量不递归，子目录需单独处理；多个输入不要配 `-o 单个.docx`（脚本会报错拒绝）。
 - 字体需本机安装：`方正小标宋简体` 为方正商用字体，`仿宋_GB2312`/`楷体_GB2312` 为中易字体，请自行确认授权；本仓库不附带任何字体文件。缺失时 Word 会回退替换。
 
@@ -93,3 +101,8 @@ Main formatter script for Chinese official-document Word layout.
 ### scripts/selftest.py
 
 Regression check for the safety behaviours above: `python3 scripts/selftest.py`.
+
+### scripts/test_punctuation.py / scripts/test_repository_safety.py
+
+In-memory punctuation and content-preservation checks, plus read-only Git ignore checks:
+`python3 -B -m unittest discover -s scripts -p 'test_*.py' -v`.

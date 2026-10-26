@@ -21,6 +21,7 @@ try:
     from docx.opc.exceptions import PackageNotFoundError
     from docx.oxml.ns import qn
     from docx.shared import Cm, Pt, RGBColor
+    from docx.text.run import Run
 except Exception:
     print("缺少依赖：python-docx，请先安装：pip install python-docx", file=sys.stderr)
     raise
@@ -160,26 +161,31 @@ def run_has_complex_content(run) -> bool:
 
 
 def rewrite_paragraph_text(p, style: str, normalize: bool):
-    """逐 run 规范化标点，避免重建 run 造成图片/行内格式丢失。"""
-    has_cjk = bool(CJK_RE.search(p.text))
-    if not (normalize and has_cjk):
+    """按整段语境判断标点，再按原字符位置回填各 run。"""
+    text = p.text
+    if not (normalize and CJK_RE.search(text)):
         return
+    prefix = ""
+    if style == "level3":
+        match = LEVEL3_PREFIX_RE.match(text)
+        if match:
+            prefix = match.group(0)
     state = {"dq": True, "sq": True}
-    first_text_run = True
-    for run in p.runs:
-        if run_has_complex_content(run):
-            continue
-        text = run.text
-        if not text:
-            continue
-        prefix = ""
-        if style == "level3" and first_text_run:
-            m = LEVEL3_PREFIX_RE.match(text)
-            if m:
-                prefix = m.group(0)      # 保护 “1.” 这类编号，避免被转成 “1。”
-        run.text = prefix + normalize_punctuation(text[len(prefix):], state)
-        if text.strip():
-            first_text_run = False
+    normalized = prefix + normalize_punctuation(text[len(prefix):], state)
+
+    # 标点替换保持字符数不变；超链接也占字符位置，但不重写其 XML。
+    offset = 0
+    for content in p.iter_inner_content():
+        original = content.text
+        end = offset + len(original)
+        replacement = normalized[offset:end]
+        offset = end
+        if (
+            isinstance(content, Run)
+            and not run_has_complex_content(content)
+            and replacement != original
+        ):
+            content.text = replacement
 
 
 def format_paragraph(p, en_font: str, is_issuer: bool = False, is_title: bool = False, normalize: bool = True):

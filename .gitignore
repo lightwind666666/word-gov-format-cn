@@ -3,3 +3,35 @@ __pycache__/
 *.pyc
 sample/out/
 ~$*.docx
+.DS_Store
+
+# Business documents and generated outputs (including uppercase extensions).
+# The reviewed sample is already tracked; do not allowlist the sample directory.
+*.[dD][oO][cC]
+*.[dD][oO][cC][xXmM]
+*.[dD][oO][tT]
+*.[dD][oO][tT][xXmM]
+*.[rR][tT][fF]
+*.[oO][dD][tT]
+*.[xX][lL][sS]
+*.[xX][lL][sS][xXmM]
+*.[cC][sS][vV]
+*.[pP][dD][fF]
+*.[pP][pP][tT]
+*.[pP][pP][tT][xXmM]
+
+# Backups may contain the entire original document.
+*.[bB][aA][kK]
+*.[bB][aA][kK]-*
+*.backup
+*.orig
+*.tmp
+*~
+
+# Local configuration and credentials.
+.env
+.env.*
+*.[pP][eE][mM]
+*.[kK][eE][yY]
+*.[pP]12
+*.[pP][fF][xX]
